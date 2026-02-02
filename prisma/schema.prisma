@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(USER)
+  status    UserStatus @default(ACTIVE)
+  teamId    Int?
+  team      Team?    @relation(fields: [teamId], references: [id])
+  activityLogs ActivityLog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Team {
+  id        Int      @id @default(autoincrement())
+  name      String
+  status    TeamStatus @default(ACTIVE)
+  users     User[]
+  sites     Site[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Site {
+  magicTokens MagicLoginToken[]
+  stats       SiteStats?
+  id        Int      @id @default(autoincrement())
+  domain    String   @unique
+  type      SiteType @default(LIVE)
+  status    SiteStatus @default(ACTIVE)
+  apiKey    String   @unique
+  apiSecret String   @unique
+  teamId    Int?
+  team      Team?    @relation(fields: [teamId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  activityLogs ActivityLog[]
+}
+
+model LoginAttempt {
+  id          Int       @id @default(autoincrement())
+  ip          String
+  email       String
+  success     Boolean
+  lockedUntil DateTime?
+  createdAt   DateTime  @default(now())
+  
+  @@index([ip])
+  @@index([email])
+  @@index([createdAt])
+}
+
+model SecurityLog {
+  id        Int      @id @default(autoincrement())
+  type      String
+  ip        String
+  email     String?
+  details   String   @db.Text
+  createdAt DateTime @default(now())
+  
+  @@index([type])
+  @@index([ip])
+  @@index([createdAt])
+}
+
+model DomainMonitor {
+  id              Int      @id @default(autoincrement())
+  domain          String   @unique
+  currentNS       String   @db.Text
+  expectedNS      String   @db.Text
+  lastChecked     DateTime @default(now())
+  nsChanged       Boolean  @default(false)
+  notificationSent Boolean @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([domain])
+}
+
+model AllowedDomain {
+  id        Int      @id @default(autoincrement())
+  domain    String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  
+  @@index([domain])
+}
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  USER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum TeamStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SiteType {
+  BETA
+  LIVE
+}
+
+enum SiteStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model SiteStats {
+  id          Int      @id @default(autoincrement())
+  siteId      Int      @unique
+  pluginCount Int      @default(0)
+  themeCount  Int      @default(0)
+  userCount   Int      @default(0)
+  lastSync    DateTime @default(now())
+  site        Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+}
+
+model MagicLoginToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  siteId    Int
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  siteId    Int?
+  action    String    @db.VarChar(255)
+  details   String?   @db.Text
+  ipAddress String?   @db.VarChar(45)
+  createdAt DateTime  @default(now())
+  
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site Site? @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  
+  @@index([userId])
+  @@index([siteId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model EmailSettings {
+  id        Int      @id @default(autoincrement())
+  smtpHost  String
+  smtpPort  Int
+  smtpUser  String
+  smtpPass  String
+  fromEmail String
+  fromName  String
+  secure    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MagicLoginOTP {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  otp       String
+  siteId    Int
+  userEmail String
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  @@index([token])
+  @@index([otp])
+  @@index([expiresAt])
+}

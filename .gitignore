@@ -1,0 +1,22 @@
+# Archives
+*.zip
+*.tar
+*.gz
+
+# Environment
+.env
+.env.*
+*.key
+
+# Node / build
+node_modules/
+.next/
+dist/
+build/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
