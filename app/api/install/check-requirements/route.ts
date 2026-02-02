@@ -4,102 +4,99 @@
  */
 
 import { NextResponse } from 'next/server'
-import { config, validateConfig } from '@/lib/config'
+import { config } from '@/lib/config'
 import { testConnection } from '@/lib/db'
 
 export async function GET() {
-    const checks: Array<{
+    const requirements: Array<{
         name: string
-        status: 'passed' | 'failed' | 'warning'
-        message: string
-        details?: string
+        description: string
+        status: 'pass' | 'fail' | 'warning'
+        message?: string
     }> = []
-
-    // Check environment variables
-    const configValidation = validateConfig()
 
     // Encryption Key
     if (config.security.encryptionKey && config.security.encryptionKey.length === 64) {
-        checks.push({
+        requirements.push({
             name: 'Encryption Key',
-            status: 'passed',
-            message: 'Configured',
-            details: 'AES-256 encryption key is valid'
+            description: 'AES-256 encryption key is valid',
+            status: 'pass',
+            message: 'Configured'
         })
     } else {
-        checks.push({
+        requirements.push({
             name: 'Encryption Key',
-            status: 'failed',
-            message: 'Invalid or missing',
-            details: 'ENCRYPTION_KEY must be 64 hex characters'
+            description: 'ENCRYPTION_KEY must be 64 hex characters',
+            status: 'fail',
+            message: 'Invalid or missing'
         })
     }
 
     // JWT Secret
     if (config.security.jwtSecret && config.security.jwtSecret.length >= 32) {
-        checks.push({
+        requirements.push({
             name: 'JWT Secret',
-            status: 'passed',
-            message: 'Configured',
-            details: 'JWT_SECRET is configured'
+            description: 'JWT_SECRET is configured',
+            status: 'pass',
+            message: 'Configured'
         })
     } else {
-        checks.push({
+        requirements.push({
             name: 'JWT Secret',
-            status: 'failed',
-            message: 'Invalid or missing',
-            details: 'JWT_SECRET must be at least 32 characters'
+            description: 'JWT_SECRET must be at least 32 characters',
+            status: 'fail',
+            message: 'Invalid or missing'
         })
     }
 
     // Session Secret
     if (config.security.sessionSecret && config.security.sessionSecret.length >= 32) {
-        checks.push({
+        requirements.push({
             name: 'Session Secret',
-            status: 'passed',
-            message: 'Configured',
-            details: 'SESSION_SECRET is configured'
+            description: 'SESSION_SECRET is configured',
+            status: 'pass',
+            message: 'Configured'
         })
     } else {
-        checks.push({
+        requirements.push({
             name: 'Session Secret',
-            status: 'failed',
-            message: 'Invalid or missing',
-            details: 'SESSION_SECRET must be at least 32 characters'
+            description: 'SESSION_SECRET must be at least 32 characters',
+            status: 'fail',
+            message: 'Invalid or missing'
         })
     }
 
     // reCAPTCHA
     if (config.recaptcha.siteKey && config.recaptcha.secretKey) {
-        checks.push({
+        requirements.push({
             name: 'reCAPTCHA Config',
-            status: 'passed',
-            message: 'Configured',
-            details: 'Both site key and secret key are set'
+            description: 'Both site key and secret key are set',
+            status: 'pass',
+            message: 'Configured'
         })
     } else {
-        checks.push({
+        requirements.push({
             name: 'reCAPTCHA Config',
+            description: 'reCAPTCHA is disabled - recommended for production',
             status: 'warning',
-            message: 'Not configured',
-            details: 'reCAPTCHA is disabled - recommended for production'
+            message: 'Not configured'
         })
     }
 
     // Database Configuration
     if (config.database.host && config.database.user && config.database.name) {
-        checks.push({
+        requirements.push({
             name: 'Database Config',
-            status: 'passed',
-            message: 'Configured',
-            details: `${config.database.user}@${config.database.host}:${config.database.port}/${config.database.name}`
+            description: `${config.database.user}@${config.database.host}:${config.database.port}/${config.database.name}`,
+            status: 'pass',
+            message: 'Configured'
         })
     } else {
-        checks.push({
+        requirements.push({
             name: 'Database Config',
-            status: 'failed',
-            message: 'Missing configuration',
-            details: 'DB_HOST, DB_USER, and DB_NAME are required'
+            description: 'DB_HOST, DB_USER, and DB_NAME are required',
+            status: 'fail',
+            message: 'Missing configuration'
         })
     }
 
@@ -107,45 +104,45 @@ export async function GET() {
     try {
         const dbTest = await testConnection()
         if (dbTest.success) {
-            checks.push({
+            requirements.push({
                 name: 'Database Connection',
-                status: 'passed',
-                message: 'Connected',
-                details: `MySQL version: ${dbTest.version}`
+                description: `MySQL version: ${dbTest.version}`,
+                status: 'pass',
+                message: 'Connected'
             })
         } else {
-            checks.push({
+            requirements.push({
                 name: 'Database Connection',
-                status: 'failed',
-                message: 'Connection failed',
-                details: dbTest.message
+                description: dbTest.message || 'Connection failed',
+                status: 'fail',
+                message: 'Connection failed'
             })
         }
     } catch (error) {
-        checks.push({
+        requirements.push({
             name: 'Database Connection',
-            status: 'failed',
-            message: 'Connection error',
-            details: error instanceof Error ? error.message : 'Unknown error'
+            description: error instanceof Error ? error.message : 'Unknown error',
+            status: 'fail',
+            message: 'Connection error'
         })
     }
 
     // SMTP (optional)
     if (config.email.enabled) {
-        checks.push({
+        requirements.push({
             name: 'Email (SMTP)',
-            status: 'passed',
-            message: 'Configured',
-            details: `SMTP: ${config.email.host}:${config.email.port}`
+            description: `SMTP: ${config.email.host}:${config.email.port}`,
+            status: 'pass',
+            message: 'Configured'
         })
     } else {
-        checks.push({
+        requirements.push({
             name: 'Email (SMTP)',
+            description: 'Email notifications will be disabled',
             status: 'warning',
-            message: 'Not configured',
-            details: 'Email notifications will be disabled'
+            message: 'Not configured'
         })
     }
 
-    return NextResponse.json({ checks })
+    return NextResponse.json({ requirements })
 }
