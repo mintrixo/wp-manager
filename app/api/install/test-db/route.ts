@@ -5,7 +5,7 @@
 import { NextResponse } from 'next/server'
 import { testConnection } from '@/lib/db'
 
-export async function GET() {
+async function handleTestDb() {
     try {
         const result = await testConnection()
         return NextResponse.json(result)
@@ -15,4 +15,12 @@ export async function GET() {
             { status: 500 }
         )
     }
+}
+
+export async function GET() {
+    return handleTestDb()
+}
+
+export async function POST() {
+    return handleTestDb()
 }
