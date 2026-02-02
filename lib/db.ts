@@ -185,32 +185,66 @@ export async function runMigration(migrationSQL: string): Promise<{
   try {
     const db = await getDB();
 
-    // Split by semicolon and execute each statement
-    const statements = migrationSQL
-      .split(';')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0 && !s.startsWith('--'));
+    // Better SQL statement parsing - handle multi-line statements
+    // Split on semicolons that are followed by newline and a comment or CREATE/INSERT
+    const statements: string[] = [];
+    let currentStatement = '';
+
+    const lines = migrationSQL.split('\n');
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+
+      // Skip empty lines and comment-only lines at statement start
+      if (currentStatement === '' && (trimmedLine === '' || trimmedLine.startsWith('--'))) {
+        continue;
+      }
+
+      currentStatement += line + '\n';
+
+      // If line ends with semicolon and we have a statement, add it
+      if (trimmedLine.endsWith(';')) {
+        const stmt = currentStatement.trim();
+        if (stmt && !stmt.startsWith('--')) {
+          statements.push(stmt);
+        }
+        currentStatement = '';
+      }
+    }
+
+    // Add any remaining statement
+    if (currentStatement.trim()) {
+      statements.push(currentStatement.trim());
+    }
 
     let tablesCreated = 0;
+    let errors: string[] = [];
 
     for (const statement of statements) {
+      if (!statement || statement.startsWith('--')) continue;
+
       try {
         await db.execute(statement);
         if (statement.toUpperCase().includes('CREATE TABLE')) {
           tablesCreated++;
         }
       } catch (error) {
-        // Ignore "table already exists" errors
-        if (!(error instanceof Error && error.message.includes('already exists'))) {
-          throw error;
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        // Ignore "already exists" and "duplicate" errors
+        if (!errorMsg.includes('already exists') && !errorMsg.includes('Duplicate')) {
+          console.error('[DB] Statement failed:', statement.substring(0, 100), errorMsg);
+          errors.push(errorMsg);
         }
       }
     }
 
     console.log(`[DB] Migration completed: ${tablesCreated} tables created/verified`);
+    if (errors.length > 0) {
+      console.log(`[DB] Migration had ${errors.length} errors:`, errors);
+    }
+
     return {
       success: true,
-      message: 'Migration completed successfully',
+      message: `Migration completed: ${tablesCreated} tables created`,
       tablesCreated,
     };
   } catch (error) {

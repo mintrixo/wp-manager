@@ -16,7 +16,7 @@ import {
   Download,
   Trash2,
   RefreshCw,
-  ArrowRightOnRectangle,
+  LogIn,
   Loader2
 } from 'lucide-react'
 
@@ -179,8 +179,8 @@ export default function SitesPage() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 rounded-md text-sm font-medium transition ${activeTab === tab
-                  ? 'bg-purple-500 text-white'
-                  : 'text-gray-400 hover:text-white'
+                ? 'bg-purple-500 text-white'
+                : 'text-gray-400 hover:text-white'
                 }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -239,7 +239,7 @@ export default function SitesPage() {
                           onClick={() => handleMagicLogin(site.id)}
                           className="flex items-center gap-2 w-full px-4 py-2 text-gray-300 hover:bg-slate-600 transition"
                         >
-                          <ArrowRightOnRectangle className="w-4 h-4" />
+                          <LogIn className="w-4 h-4" />
                           Magic Login
                         </button>
                         <Link
@@ -270,8 +270,8 @@ export default function SitesPage() {
                   {site.status.charAt(0).toUpperCase() + site.status.slice(1)}
                 </span>
                 <span className={`px-2.5 py-1 rounded-full text-xs ${site.environment === 'live'
-                    ? 'bg-green-500/10 text-green-400'
-                    : 'bg-yellow-500/10 text-yellow-400'
+                  ? 'bg-green-500/10 text-green-400'
+                  : 'bg-yellow-500/10 text-yellow-400'
                   }`}>
                   {site.environment.toUpperCase()}
                 </span>
@@ -304,7 +304,7 @@ export default function SitesPage() {
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
-                      <ArrowRightOnRectangle className="w-4 h-4" />
+                      <LogIn className="w-4 h-4" />
                       Login
                     </>
                   )}
